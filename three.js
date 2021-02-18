@@ -62,6 +62,7 @@ io.on('connect',async (socket) => {
 
             socket.on('updatePos', (pNumber, u, pos) => {
                 io.emit('updatePos', u, pos)
+                console.log(u)
                 console.log(pos)
                 //positions[pNumber].x = pos.x;
                 //positions[pNumber].y = pos.y;
