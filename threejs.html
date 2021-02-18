@@ -1,0 +1,287 @@
+<html>
+	<head>
+		<title>My first three.js app</title>
+		<style>
+			
+			canvas { display: block; }
+			body {
+					overflow: hidden;
+					margin: 0;
+					}
+
+					.ui {
+					position: absolute;
+					}
+
+					button{
+					margin: 20px;
+					}
+		</style>
+	</head>
+	<body onkeypress="keyPress(event)">
+		<div style="width:100%;height:50px;text-align: center; color:white;" class="ui" id="info">Info header</div>
+			<button style="top:0" id="fire" class="ui">Fire</button>
+			<button style="bottom:0" id="spell" class="ui">Spell</button>
+			<button style="right:0" id="health" class="ui">Health</button>
+			<button style="right:0; bottom:0;" id="shield" class="ui">Shield</button>
+
+		<script src="/socket.io/socket.io.js"></script>
+		<script src="https://threejs.org/build/three.js"></script>
+		<script>
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+			var renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+			
+				var geometry = new THREE.BoxGeometry();
+				var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+				var cube = new THREE.Mesh( geometry, material );
+				//scene.add(cube);
+			
+			
+
+			camera.position.z = 5;
+
+			var RotateX = false;
+			var RotateY = false;
+			var Speed = 0;
+
+			var animate = function () {
+				requestAnimationFrame( animate );
+
+
+				if(RotateX){
+					//cube.rotation.x += 0.01 + Speed;
+				}	
+				
+				if(RotateY){
+					//cube.rotation.y += 0.01 + Speed;
+				}
+
+				//cube.position.x += 0.001;
+				
+
+				renderer.render( scene, camera );
+			};
+
+			animate();
+
+			var threeObjects = {};
+			var players = []
+			var socketid = []
+			var playersUsernames = []
+			var playersThreeObj = []
+			var d = Math.floor(Date.now() / 1000);
+			let username = d;
+			let playerNumber = 0;
+			var playerPos = []
+			var playerRot = []
+			var speed = .05; 
+			var yPos, xPos, zPos;
+
+			function addPlayer(id, who) {
+						
+					if(socketid.includes(id)){
+						//setInfo('already here')
+						return;
+					}				
+					
+					if(playersUsernames.includes(who)){
+						//setInfo('already here')
+						return;
+					}
+					setInfo(who)
+					if(who == "me" ){												
+						setInfo("you have been added: " + id + " "+ who);
+					} else{
+						setInfo(id +" "+ who+ " joined");
+					}
+					
+					
+					const randomColor = Math.floor(Math.random()*16777215).toString(16);
+					const col = '0x' + randomColor;					
+					var threeObject = new THREE.Mesh(
+						new THREE.BoxGeometry(),
+						new THREE.MeshBasicMaterial( { color: col } )
+					);
+					scene.add(threeObject)
+					var ranNum = Math.floor(Math.random() * 6);
+					threeObject.position.set(ranNum, 0, 0)
+					// set reference
+					threeObjects[who] =  threeObject;
+					//setInfo(threeObjects[who])
+					var p_data = {p_id: id, p_name: who, position:{x:0,y:0,z:0},rotation:{x:0,y:0,z:0}}
+					players.push(p_data);
+					playersThreeObj.push(threeObjects[who]);
+					playersUsernames.push(who)
+					socketid.push(id)
+					var pos = {user:u,x:0,y:0,z:0}
+					playerPos.push(pos)
+					var rot = {user:u,x:0,y:0,z:0}
+					playerRot.push(rot)
+					
+					listPlayers();					
+				}
+					
+
+
+			listPlayers = () => {
+				alert(players.length)
+				var text = "";
+				for(var i = 0; i < players.length; i++){
+					setInfo(players[i].p_name);
+				}
+				
+			}
+
+			function removePlayer (id){	
+								
+				for(var i = 0; i < players.length; i++){
+					setInfo(players[i].p_id);
+					if(id == players[i].p_id){
+						scene.remove(playersThreeObj[i])
+						setInfo(id + ' left ')
+					}					
+				}											
+			}
+
+			const socket = io();
+			
+				
+				socket.on('connect', () => {
+					//RotateX = true;
+					//RotateY = true;
+					newPlayer(d);					
+				});
+						
+				newPlayer = (me) => {					
+					socket.emit('newPlayer', me);	
+					//socket.emit('addOtherPlayers');
+					setInfo('newPlayer me= '+ me)				
+				}
+				
+				socket.on('LoadPlayers', (id, u , pNumber) => {
+					socket.emit('addAllPlayers', username, pNumber);
+					playerNumber = pNumber;
+					setInfo('MyPlayerNumber='+playerNumber) 
+					//setInfo('LoadPlayers')					
+				})
+
+
+				socket.on('addPlayer', (id, u) => {
+					addPlayer(id, u);						
+					//alert("adding player " + id+ "");						
+				})
+				
+
+				socket.on('removePlayer', (id) => {
+					removePlayer(id);						
+					setInfo('removePlayer ' + id)
+				})
+				
+
+
+
+				socket.on('hello', (msg) => {
+					//Speed = counter / 10 ;
+					//PingMsg('hey there')
+				});
+
+				socket.on('update', (counter) => {
+					//Speed = counter / 10 ;
+					PingMsg('hey there')
+				});
+				
+					
+
+
+				function PingMsg(msg){
+						socket.emit('chat message', msg);
+						//alert(msg);
+					}		
+
+
+					 function keyPress(event) {
+						var e = event.which || event.keyCode;	
+							//alert(x);
+							u = username;
+							
+
+								if (e == 119) { // W key									
+									//socket.emit('moveUp', u)
+									yPos += speed;	
+									
+								}
+
+								if (e == 115) { // S key									
+									//socket.emit('moveDown', u)
+									yPos -= speed;									
+								}
+
+								if (e == 97) { // A key									
+									//socket.emit('moveLeft', u)
+									xPos += speed;
+								}
+
+								if (e == 100) { // D key									
+									//socket.emit('moveRight', u)
+									xPos -= speed;
+								}
+
+								pNumber = playerNumber;
+								
+								pos = {user:u, x:xPos, y:yPos, z:zPos}
+								socket.emit('updatePos', pNumber, u, pos)
+					}		
+
+					socket.on('updatePos', function(u , pos) {						
+						threeObject[u].position.set(pos.x, pos.y, pos.z)					
+					})
+
+
+				UnityMove =  () => {							
+							u = username;
+							socket.emit('moveUp', u)
+					}
+					
+
+
+					socket.on('moveUpNow', function(u) {
+						threeObjects[u].position.y += .05;						
+					})
+					socket.on('moveDownNow', function(u) {
+						threeObjects[u].position.y -= .05;						
+					})
+					socket.on('moveleftNow', function(u) {
+						threeObjects[u].position.x -= .05;						
+					})
+					socket.on('moveRightNow', function(u) {
+						threeObjects[u].position.x += .05;						
+					})
+
+					var buttons = document.getElementsByTagName("button");
+					for (let i = 0; i < buttons.length; i++) {
+					buttons[i].addEventListener("click", onButtonClick, false);
+					};
+
+					function onButtonClick(event) {
+					alert(event.target.id);
+					}	
+					
+					let infos = ""
+					setInfo = (text) => {
+						infos += text + " ~ " ;
+						document.getElementById("info").innerHTML = infos;
+					}
+
+
+		</script>
+	</body>
+</html>
+
+<script>
+	
+</script>
