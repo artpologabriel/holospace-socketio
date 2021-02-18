@@ -237,8 +237,9 @@
 								socket.emit('updatePos', pNumber, u, pos)
 					}		
 
-					socket.on('updatePos', function(u , pos) {						
-						threeObject[u].position.set(pos.x, pos.y, pos.z)					
+					socket.on('updatePos', function(u , pos) {
+						console.log(u + pos)
+						//threeObject[u].position.set(pos.x, pos.y, pos.z)					
 					})
 
 
